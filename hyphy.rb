@@ -2,8 +2,8 @@ require 'formula'
 
 class Hyphy < Formula
   homepage 'http://www.hyphy.org/'
-  url 'https://github.com/veg/hyphy/archive/2.2.tar.gz'
-  sha1 '9ff285a71a51f4699947a162fe46c3eb3458425e'
+  url 'https://github.com/veg/hyphy/archive/v2.2.2.tar.gz'
+  sha1 '018953506cef280a3f4b9cd4a898a10d7fa0c140'
   head 'https://github.com/veg/hyphy.git'
 
   option 'with-opencl', "Build a version with OpenCL GPU/CPU acceleration"
