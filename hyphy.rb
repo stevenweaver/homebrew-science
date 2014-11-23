@@ -10,6 +10,7 @@ class Hyphy < Formula
   option 'without-multi-threaded', "Don't build a multi-threaded version"
   option 'without-single-threaded', "Don't build a single-threaded version"
 
+  depends_on "openssl"
   depends_on 'cmake' => :build
   depends_on :mpi => :optional
 
