@@ -1,11 +1,17 @@
-require "formula"
-
 class Openimageio < Formula
   homepage "http://openimageio.org"
-  url "https://github.com/OpenImageIO/oiio/archive/Release-1.4.8.tar.gz"
-  sha1 "412793b71ba5510709795a47395a78436a4c5344"
+  url "https://github.com/OpenImageIO/oiio/archive/Release-1.5.14.tar.gz"
+  sha256 "b9553fe616c94b872b1e17d1a74d450cdcaf1ad512905253e7d02683dfaa9d63"
+  revision 1
 
   head "https://github.com/OpenImageIO/oiio.git"
+
+  bottle do
+    cellar :any
+    sha256 "e7185968cd34d2f26b0310a2a2dddb3ec5399e22ee5fcbda6602e650125484aa" => :yosemite
+    sha256 "a53476e313fdafa04333b8d0ff080e4082c17198bc521610c65f6ff633fb08ff" => :mavericks
+    sha256 "edfb576f58c6938d25be5d2509419c52dd6ab66942b33123b2026438540057ed" => :mountain_lion
+  end
 
   option "with-tests",  "Dowload 95MB of test images and verify Oiio (~2 min)"
 
@@ -17,48 +23,49 @@ class Openimageio < Formula
   depends_on "openexr"
   depends_on "boost"
   depends_on "boost-python"
+  depends_on "libpng"
   depends_on "libtiff"
   depends_on "jpeg"
   depends_on "openjpeg"
   depends_on "cfitsio"
-  depends_on "hdf5" => "enable-cxx"
+  depends_on "hdf5"
   depends_on "field3d"
   depends_on "webp"
   depends_on "glew"
   depends_on "freetype"
   depends_on "openssl"
+  depends_on "giflib" => :optional
 
   resource "j2kp4files" do
     url "http://pkgs.fedoraproject.org/repo/pkgs/openjpeg/j2kp4files_v1_5.zip/27780ed3254e6eb763ebd718a8ccc340/j2kp4files_v1_5.zip"
-    sha1 "a90cad94abbe764918175db72b49df6d2f63704b"
+    sha256 "21cf3156ed2a2a39765c0d57f36c71d1291e9c30054775a2f0a8fdd2964f1799"
   end
 
   resource "tiffpic" do
     url "ftp://ftp.remotesensing.org/pub/libtiff/pics-3.8.0.tar.gz"
-    sha1 "f50e14335fd98f73c6a235d3ff4d83cf4767ab37"
+    sha256 "e0e34732b61e1ce49eff2c7a079994c856d2a5f772f5228c84678272bc6829a9"
   end
 
   resource "bmpsuite" do
     url "http://entropymine.com/jason/bmpsuite/bmpsuite.zip"
-    sha1 "2e43ec4d8e6f628f71a554c327433914000db7ba"
+    sha256 "7c7643003476da4e2b29ebbb0ed1ca28cf7eb21a04b4f474567c1bea5caba089"
     version "1.0.0"
   end
 
   resource "tgautils" do
-    url "http://makseq.com/materials/lib/Code/FileFormats/BitMap/TARGA/TGAUTILS.ZIP"
-    sha1 "0902c51e7b00ae70a460250f60d6adc41c8095df"
+    url "https://raw.githubusercontent.com/DomT4/LibreMirror/57cade6cc3d84fa214624669f8b078e53b191faa/tgautils/TGAUTILS.ZIP"
+    sha256 "1c05c376800d75332e544b665354b9e234f97352266b4dea40d5424d8bcb3299"
     version "1.0.0"
   end
 
   resource "openexrimages" do
     url "http://download.savannah.nongnu.org/releases/openexr/openexr-images-1.5.0.tar.gz"
-    sha1 "22bb1a3d37841a88647045353f732ceac652fd3f"
+    sha256 "1b3ab7a4e38c6b0085ad3c08fb5463163c2a516e55606bb1b7749648b83fa0d9"
   end
 
   resource "oiioimages" do
-    url "https://github.com/OpenImageIO/oiio-images/tarball/9bf43561f5"
-    sha1 "8f12a86098120fd10ceb294a0d3aa1c95a0d3f80"
-    version "1.0.0"
+    url "https://github.com/OpenImageIO/oiio-images.git",
+        :revision => "9bf43561f5d0f9d23a7b242fdc5849d6afd52ef5"
   end
 
   def install
@@ -70,28 +77,14 @@ class Openimageio < Formula
       chdir "localpub"
     end
 
-    ENV.append "MY_CMAKE_FLAGS", "-Wno-dev"   # stops a warning.
+    ENV.append "MY_CMAKE_FLAGS", "-Wno-dev" # stops a warning.
     ENV.append "MY_CMAKE_FLAGS", "-DOPENJPEG_INCLUDE_DIR=#{Formula["openjpeg"].opt_include}/openjpeg-1.5"
     ENV.append "MY_CMAKE_FLAGS", "-DFREETYPE_INCLUDE_DIRS=#{Formula["freetype"].opt_include}/freetype2"
+    ENV.append "MY_CMAKE_FLAGS", "-DUSE_OPENCV=OFF"
+    ENV.append "MY_CMAKE_FLAGS", "-DCMAKE_FIND_FRAMEWORK=LAST"
+    ENV.append "MY_CMAKE_FLAGS", "-DCMAKE_VERBOSE_MAKEFILE=ON"
 
     args = ["USE_TBB=1", "EMBEDPLUGINS=1"]
-
-    python_prefix = `python-config --prefix`.strip
-    # Python is actually a library. The libpythonX.Y.dylib points to this lib, too.
-    if File.exist? "#{python_prefix}/Python"
-      # Python was compiled with --framework:
-      ENV.append "MY_CMAKE_FLAGS", "-DPYTHON_LIBRARY='#{python_prefix}/Python'"
-      ENV.append "MY_CMAKE_FLAGS", "-DPYTHON_INCLUDE_DIR='#{python_prefix}/Headers'"
-    else
-      python_version = `python-config --libs`.match("-lpython(\d+\.\d+)").captures.at(0)
-      python_lib = "#{python_prefix}/lib/libpython#{python_version}"
-      ENV.append "MY_CMAKE_FLAGS", "-DPYTHON_INCLUDE_DIR='#{python_prefix}/include/python#{python_version}'"
-      if File.exist? "#{python_lib}.a"
-        ENV.append "MY_CMAKE_FLAGS", "-DPYTHON_LIBRARY='#{python_lib}.a'"
-      else
-        ENV.append "MY_CMAKE_FLAGS", "-DPYTHON_LIBRARY='#{python_lib}.dylib'"
-      end
-    end
 
     # Download standardized test images if the user throws --with-tests.
     # 90% of the images are in tarballs, so they are cached normally.
@@ -125,24 +118,17 @@ class Openimageio < Formula
     args << "USE_OPENGL=" + (build.with?("qt") ? "1" : "0")
     system "make", *args
     system "make", "test" if build.with? "tests"
-    # There is no working make install in 1.1.6, devel or HEAD.
     cd "dist/macosx" do
-      (lib + which_python ).install "lib/python/site-packages"
-      prefix.install  %w[bin include]
-      lib.install    Dir["lib/lib*"]
-      doc.install    "share/doc/openimageio/openimageio.pdf"
+      (lib/"python2.7").install "lib/python/site-packages"
+      prefix.install %w[bin include]
+      lib.install Dir["lib/lib*"]
+      doc.install "share/doc/openimageio/openimageio.pdf"
       prefix.install Dir["share/doc/openimageio/*"]
     end
   end
 
-  def caveats; <<-EOS.undent
-    If OpenImageIO is brewed using non-homebrew Python, then you need to amend
-    your PYTHONPATH like so:
-      export PYTHONPATH=#{HOMEBREW_PREFIX}/lib/#{which_python}/site-packages:$PYTHONPATH
-    EOS
-  end
-
-  def which_python
-    "python" + `python -c 'import sys;print(sys.version[:3])'`.strip
+  test do
+    system bin/"oiiotool", "--info", test_fixtures("test.jpg")
+    system bin/"oiiotool", "--info", test_fixtures("test.png")
   end
 end

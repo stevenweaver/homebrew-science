@@ -1,5 +1,3 @@
-require "formula"
-
 class Cerulean < Formula
   homepage "https://sourceforge.net/projects/ceruleanassembler/"
   #doi "arXiv:1307.7933"
@@ -9,7 +7,7 @@ class Cerulean < Formula
   sha1 "535e3486da3cf1de5bbaee794c3c14c53b1ee4e4"
 
   depends_on "abyss" => :recommended
-  depends_on "python"
+  depends_on "numpy" => :python
 
   def install
     doc.install "README"
@@ -18,6 +16,6 @@ class Cerulean < Formula
   end
 
   test do
-    system "python #{libexec}/Cerulean.py -h"
+    system "python", "#{libexec}/Cerulean.py", "-h"
   end
 end

@@ -1,15 +1,21 @@
-require "formula"
-
 class Netcdf < Formula
   homepage "http://www.unidata.ucar.edu/software/netcdf"
-  url "ftp://ftp.unidata.ucar.edu/pub/netcdf/netcdf-4.3.2.tar.gz"
-  mirror "http://www.gfd-dennou.org/library/netcdf/unidata-mirror/netcdf-4.3.2.tar.gz"
-  sha1 "6e1bacab02e5220954fe0328d710ebb71c071d19"
+  url "ftp://ftp.unidata.ucar.edu/pub/netcdf/netcdf-4.3.3.1.tar.gz"
+  mirror "http://www.gfd-dennou.org/library/netcdf/unidata-mirror/netcdf-4.3.3.1.tar.gz"
+  sha256 "bdde3d8b0e48eed2948ead65f82c5cfb7590313bc32c4cf6c6546e4cea47ba19"
+
+  bottle do
+    sha256 "bafd64140f1154d12ce580f7c7c232106713ca2b4894da8f839834fd29dba459" => :yosemite
+    sha256 "8c247f3f508b2f1e0cf32e4d2ed952c4ff4406b61b381cd26c3c937b0227e6f6" => :mavericks
+    sha256 "aaa436412224ba0455effa0a610cfbc15d0a01fe14b2bb514a1f930c7466c7d4" => :mountain_lion
+  end
 
   deprecated_option "enable-fortran" => "with-fortran"
+  deprecated_option "disable-cxx" => "without-cxx"
+  deprecated_option "enable-cxx-compat" => "with-cxx-compat"
 
-  option "disable-cxx", "Don't compile C++ bindings"
-  option "enable-cxx-compat", "Compile C++ bindings for compatibility"
+  option "without-cxx", "Don't compile C++ bindings"
+  option "with-cxx-compat", "Compile C++ bindings for compatibility"
   option "without-check", "Disable checks (not recommended)"
 
   depends_on :fortran => :optional
@@ -17,29 +23,19 @@ class Netcdf < Formula
 
   resource "cxx" do
     url "https://github.com/Unidata/netcdf-cxx4/archive/v4.2.1.tar.gz"
-    sha1 "0bb4a0807f10060f98745e789b6dc06deddf30ff"
+    sha256 "bad56abfc99f321829070c04aebb377fc8942a4d09e5a3c88ad2b6547ed50ebc"
   end
 
   resource "cxx-compat" do
     url "http://www.unidata.ucar.edu/downloads/netcdf/ftp/netcdf-cxx-4.2.tar.gz"
     mirror "http://www.gfd-dennou.org/arch/netcdf/unidata-mirror/netcdf-cxx-4.2.tar.gz"
-    sha1 "bab9b2d873acdddbdbf07ab35481cd0267a3363b"
+    sha256 "95ed6ab49a0ee001255eac4e44aacb5ca4ea96ba850c08337a3e4c9a0872ccd1"
   end
 
   resource "fortran" do
-    url "http://www.unidata.ucar.edu/downloads/netcdf/ftp/netcdf-fortran-4.4.1.tar.gz"
-    mirror "http://www.gfd-dennou.org/arch/netcdf/unidata-mirror/netcdf-fortran-4.4.1.tar.gz"
-    sha1 "452a1b7ef12cbcace770dcc728a7b425cf7fb295"
-  end
-
-  # HDF5 1.8.13 removes symbols related to MPI POSIX VFD, leading to
-  # errors when linking hdf5 and netcdf5 such as "undefined reference to
-  # `_H5Pset_fapl_mpiposix`". This patch fixes those errors, and has been
-  # added upstream. It should be unnecessary once NetCDF releases a new
-  # stable version.
-  patch do
-    url "https://github.com/Unidata/netcdf-c/commit/435d8a03ed28bb5ad63aff12cbc6ab91531b6bc8.diff"
-    sha1 "770ee66026e4625b80711174600fb8c038b48f5e"
+    url "ftp://ftp.unidata.ucar.edu/pub/netcdf/netcdf-fortran-4.4.2.tar.gz"
+    mirror "http://www.gfd-dennou.org/arch/netcdf/unidata-mirror/netcdf-fortran-4.4.2.tar.gz"
+    sha256 "ad6249b6062df6f62f81d1cb2a072e3a4c595f27f11fe0c5a79726d1dad3143b"
   end
 
   def install
@@ -67,13 +63,13 @@ class Netcdf < Formula
     ]
 
     args = common_args.clone
-    args.concat %w[--enable-netcdf4 --disable-doxygen]
+    args << "--enable-netcdf4" << "--disable-doxygen"
 
     system "./configure", *args
     system "make"
     ENV.deparallelize if build.with? "check" # Required for `make check`.
-    system "make check" if build.with? "check"
-    system "make install"
+    system "make", "check" if build.with? "check"
+    system "make", "install"
 
     # Add newly created installation to paths so that binding libraries can
     # find the core libs.
@@ -81,25 +77,45 @@ class Netcdf < Formula
     ENV.prepend "CPPFLAGS", "-I#{include}"
     ENV.prepend "LDFLAGS", "-L#{lib}"
 
-    resource("cxx").stage do
-      system "./configure", *common_args
-      system "make"
-      system "make check" if build.with? "check"
-      system "make install"
-    end unless build.include? "disable-cxx"
+    if build.with? "cxx"
+      resource("cxx").stage do
+        system "./configure", *common_args
+        system "make"
+        system "make", "check" if build.with? "check"
+        system "make", "install"
+      end
+    end
 
-    resource("cxx-compat").stage do
-      system "./configure", *common_args
-      system "make"
-      system "make check" if build.with? "check"
-      system "make install"
-    end if build.include? "enable-cxx-compat"
+    if build.with? "cxx-compat"
+      resource("cxx-compat").stage do
+        system "./configure", *common_args
+        system "make"
+        system "make", "check" if build.with? "check"
+        system "make", "install"
+      end
+    end
 
-    resource("fortran").stage do
-      system "./configure", *common_args
-      system "make"
-      system "make check" if build.with? "check"
-      system "make install"
-    end if build.with? "fortran"
+    if build.with? "fortran"
+      resource("fortran").stage do
+        system "./configure", *common_args
+        system "make"
+        system "make", "check" if build.with? "check"
+        system "make", "install"
+      end
+    end
+  end
+
+  test do
+    (testpath/"test.c").write <<-EOS.undent
+      #include <stdio.h>
+      #include "netcdf_meta.h"
+      int main()
+      {
+        printf(NC_VERSION);
+        return 0;
+      }
+    EOS
+    system ENV.cc, "test.c", "-L#{lib}", "-I#{include}", "-lnetcdf", "-o", "test"
+    assert_equal `./test`, version.to_s
   end
 end

@@ -1,10 +1,16 @@
-require 'formula'
-
 class SuiteSparse < Formula
-  homepage 'http://www.cise.ufl.edu/research/sparse/SuiteSparse'
-  url 'http://www.cise.ufl.edu/research/sparse/SuiteSparse/SuiteSparse-4.2.1.tar.gz'
-  mirror 'http://pkgs.fedoraproject.org/repo/pkgs/suitesparse/SuiteSparse-4.2.1.tar.gz/4628df9eeae10ae5f0c486f1ac982fce/SuiteSparse-4.2.1.tar.gz'
-  sha1 '2fec3bf93314bd14cbb7470c0a2c294988096ed6'
+  desc "Suite of Sparse Matrix Software"
+  homepage "http://faculty.cse.tamu.edu/davis/suitesparse.html"
+  url "http://faculty.cse.tamu.edu/davis/SuiteSparse/SuiteSparse-4.4.4.tar.gz"
+  sha256 "f2ae47e96f3f37b313c3dfafca59f13e6dbc1e9e54b35af591551919810fb6fd"
+  revision 1
+
+  bottle do
+    cellar :any
+    sha256 "22929df79a5da41558c3f7c8ef6bf1dfa51f6fb7fc3ee6c4a00fb22b49e2b8a2" => :yosemite
+    sha256 "3e7810e3dab4e2ba18127cf482702e3a6b1780630fb13715ab113f9f720b0433" => :mavericks
+    sha256 "eff66c1b75e03bfa34cba541732fdc8f667b10722a5da43ac30d6b6d266661f0" => :mountain_lion
+  end
 
   option "with-matlab", "Install Matlab interfaces and tools"
   option "with-matlab-path=", "Path to Matlab executable (default: matlab)"
@@ -13,31 +19,58 @@ class SuiteSparse < Formula
   depends_on "openblas" => :optional
   depends_on "metis4" => :optional # metis 5.x is not yet supported by suite-sparse
 
-  # Mathworks only support gcc/gfortran 4.3 on OSX.
-  depends_on "homebrew/versions/gcc43" => [:build, "enable-fortran"] if build.with? "matlab"
+  depends_on :fortran if build.with? "matlab"
 
   def install
     # SuiteSparse doesn't like to build in parallel
     ENV.deparallelize
 
     # Switch to the Mac base config, per SuiteSparse README.txt
-    system "mv SuiteSparse_config/SuiteSparse_config.mk SuiteSparse_config/SuiteSparse_config_orig.mk"
-    system "mv SuiteSparse_config/SuiteSparse_config_Mac.mk SuiteSparse_config/SuiteSparse_config.mk"
+    mv "SuiteSparse_config/SuiteSparse_config.mk",
+       "SuiteSparse_config/SuiteSparse_config_orig.mk"
+    mv "SuiteSparse_config/SuiteSparse_config_Mac.mk",
+       "SuiteSparse_config/SuiteSparse_config.mk"
 
-    make_args = ["INSTALL_LIB=#{lib}", "INSTALL_INCLUDE=#{include}"]
-    make_args << "BLAS=" + ((build.with? 'openblas') ? "-L#{Formula['openblas'].opt_lib} -lopenblas" : "-framework Accelerate")
+    cflags = "#{ENV.cflags}"
+    cflags += (ENV.compiler == :clang) ? "" : " -fopenmp"
+    cflags += " -I#{Formula["tbb"].opt_include}" if build.with? "tbb"
+
+    make_args = ["CFLAGS=#{cflags}",
+                 "INSTALL_LIB=#{lib}",
+                 "INSTALL_INCLUDE=#{include}",
+                 "RANLIB=echo"
+                ]
+    if build.with? "openblas"
+      make_args << "BLAS=-L#{Formula["openblas"].opt_lib} -lopenblas"
+    elsif OS.mac?
+      make_args << "BLAS=-framework Accelerate"
+    else
+      make_args << "BLAS=-lblas -llapack"
+    end
+
     make_args << "LAPACK=$(BLAS)"
-    make_args += ["SPQR_CONFIG=-DHAVE_TBB", "TBB=-L#{Formula['tbb'].opt_lib} -ltbb"] if build.with? "tbb"
-    make_args += ["METIS_PATH=", "METIS=-L#{Formula['metis4'].opt_lib} -lmetis"] if build.with? "metis4"
+    make_args += ["SPQR_CONFIG=-DHAVE_TBB",
+                  "TBB=-L#{Formula["tbb"].opt_lib} -ltbb"] if build.with? "tbb"
+    make_args += ["METIS_PATH=",
+                  "METIS=-L#{Formula["metis4"].opt_lib} -lmetis"] if build.with? "metis4"
 
-    system "make", "library", *make_args
+    # Add some flags for linux
+    # -DNTIMER is needed to avoid undefined reference to SuiteSparse_time
+    make_args << "CF=-fPIC -O3 -fno-common -fexceptions -DNTIMER $(CFLAGS)" unless OS.mac?
+
+    system "make", "default", *make_args # Also build demos.
     lib.mkpath
     include.mkpath
     system "make", "install", *make_args
+    ["AMD", "CAMD", "CHOLMOD", "KLU", "LDL", "SPQR", "UMFPACK"].each do |pkg|
+      (doc/pkg).install Dir["#{pkg}/Doc/*"]
+    end
 
-    matlab = ARGV.value("with-matlab-path") || "matlab"
     if build.with? "matlab"
-      system matlab, "-nodesktop", "-nosplash", "-r", "run('SuiteSparse_install(false)'); exit;"
+      matlab = ARGV.value("with-matlab-path") || "matlab"
+      system matlab,
+             "-nodesktop", "-nosplash",
+             "-r", "run('SuiteSparse_install(false)'); exit;"
 
       # Install Matlab scripts and Mex files.
       %w[AMD BTF CAMD CCOLAMD CHOLMOD COLAMD CSparse CXSparse KLU LDL SPQR UMFPACK].each do |m|
@@ -47,6 +80,7 @@ class SuiteSparse < Formula
       mdest = share / "suite-sparse/matlab"
       mdest.install "MATLAB_Tools"
       mdest.install "RBio/RBio"
+      (doc/"matlab").install Dir["MATLAB_Tools/Factorize/Doc/*"]
     end
   end
 
@@ -57,8 +91,12 @@ class SuiteSparse < Formula
         Matlab interfaces and tools have been installed to
 
           #{share}/suite-sparse/matlab
+
+        It is possible that the SPQR interface fail to compile
+        if you use the defaults mexopts.sh or if your mexopts.sh
+        does not use gcc-4.9.
       EOS
     end
-    return s
+    s
   end
 end

@@ -1,16 +1,18 @@
-require "formula"
-
 class Quake < Formula
   homepage "http://www.cbcb.umd.edu/software/quake/"
   #doi "10.1186/gb-2010-11-11-r116"
+  #tag "bioinformatics"
 
   url "http://www.cbcb.umd.edu/software/quake/downloads/quake-0.3.5.tar.gz"
   sha1 "5ee22ae15415b97ef88e55f0dc786d07ed7aff7b"
 
-  fails_with :clang do
-    build 503
-    cause "error: 'omp.h' file not found"
+  bottle do
+    cellar :any
+    sha1 "5c8f0b65e4a4a53684d9eb79a9e3f49dd2192676" => :yosemite
+    sha1 "aaab051aaf0a8d2459ef6a5c8299594cf68977d0" => :mavericks
   end
+
+  needs :openmp
 
   depends_on "boost"
   depends_on "jellyfish"
@@ -33,6 +35,6 @@ class Quake < Formula
   end
 
   test do
-    system "#{bin}/quake.py --help"
+    system "#{bin}/quake.py", "--help"
   end
 end

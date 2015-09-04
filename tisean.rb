@@ -4,6 +4,14 @@ class Tisean < Formula
   homepage "http://www.mpipks-dresden.mpg.de/~tisean/"
   url "http://www.mpipks-dresden.mpg.de/~tisean/TISEAN_3.0.1.tar.gz"
   sha1 "7fe71899b063abe1b3d9aae88f153988495d623b"
+  revision 2
+
+  bottle do
+    cellar :any
+    sha256 "7f371b4adb10c1f3b9ac5899aecda52d05f5667941aa419422b8874305bfea67" => :yosemite
+    sha256 "0e67267ae5ee08fe0855d670577e02585884f6851bf8f1fa3f1d469d32f0a197" => :mavericks
+    sha256 "205942c3e368a65fdf3d255fef32bc8933fec2ba7266d93eec7b618937fdb299" => :mountain_lion
+  end
 
   option "without-prefixed-binaries", "Do not prefix binaries with `tisean-`"
 
@@ -37,11 +45,13 @@ class Tisean < Formula
     end
   end
 
-  def caveats; <<-EOS.undent
-    By default, all TISEAN binaries are prefixed with `tisean-`.
-    For unprefixed binaries, use `--without-prefixed-binaries`.
-    EOS
-  end if build.with? "prefixed-binaries"
+  def caveats
+    if build.with? "prefixed-binaries" then <<-EOS.undent
+      By default, all TISEAN binaries are prefixed with `tisean-`.
+      For unprefixed binaries, use `--without-prefixed-binaries`.
+      EOS
+    end
+  end
 
   test do
     pfx = build.with?("prefixed-binaries") ? "tisean-" : ""

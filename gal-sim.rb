@@ -1,11 +1,9 @@
-require "formula"
-
 class GalSim < Formula
+  desc "A modular galaxy image simulation toolkit"
   homepage "https://github.com/GalSim-developers/GalSim"
-  url "https://github.com/GalSim-developers/GalSim/archive/v1.1.0.tar.gz"
-  sha1 'a1446f73053b4dc91f62d236193ba6ccb1fb9ae5'
+  url "https://github.com/GalSim-developers/GalSim/archive/v1.3.0.tar.gz"
+  sha256 "4afd3284adfd12845b045ea3c8e293b63057c7da57872bc9eecd005cf0a763c0"
   head "https://github.com/GalSim-developers/GalSim.git"
-  revision 1
 
   depends_on "scons" => :build
   depends_on "fftw"
@@ -43,5 +41,4 @@ class GalSim < Formula
          /Library/Python/#{pyver}/site-packages/homebrew.pth'
     EOS
   end
-
 end

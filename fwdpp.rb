@@ -1,25 +1,40 @@
-require "formula"
-
 class Fwdpp < Formula
-  homepage "http://www.molpopgen.org/software/fwdpp"
-  url "https://github.com/molpopgen/fwdpp/archive/0.2.0.tar.gz"
-  sha1 "e3371221c0bd352ccfb231d1b060ed7c26707bcc"
+  desc "fwdpp is a C++ template library for forward-time population genetic simulations"
+  homepage "https://molpopgen.github.io/fwdpp/"
+  url "https://github.com/molpopgen/fwdpp/archive/0.3.6.tar.gz"
+  sha256 "9482ec7f6a6c25744cbfbab3753cb80825b8aea6830e5c808e9178beb4b557a9"
   head "https://github.com/molpopgen/fwdpp.git"
+  # doi "10.1534/genetics.114.165019"
 
-  depends_on 'gsl'
-  depends_on 'boost' => :build
-  depends_on 'libsequence'
+  bottle do
+    cellar :any
+    sha256 "ad2b89fa050c4b2d4e7bb0d15e72de524d9f26b5cd34065776e55e03b8e97931" => :yosemite
+    sha256 "7b4ec302576cd878143c006e2e10dd6e16eef5de2118ad332851869726aac8d8" => :mavericks
+  end
+
+  option "without-check", "Disable build-time checking (not recommended)"
+
+  depends_on "gsl"
+  depends_on "boost" => :recommended
+  depends_on "libsequence"
+
+  # build fails on mountain lion at configure stage when looking for libsequence
+  # so restrict to mavericks and newer
+  depends_on :macos => :mavericks
 
   def install
     system "./configure", "--prefix=#{prefix}"
     system "make"
+    system "make", "check" if build.with? "check"
     system "make", "install"
-    system "make", "-C", "examples"
-    share.install Dir['examples']
+    pkgshare.install "examples" # install examples
+    pkgshare.install "unit"     # install unit tests
   end
 
   test do
-    # run one of the example programs (https://github.com/molpopgen/fwdpp#diploid)
-    system "#{share}/examples/diploid 1000 10 10 1000 50 1 272"
+    # run unit tests compiled with 'make check'
+    if build.with? "check"
+      Dir["#{pkgshare}/unit/*"].each { |f| system f if File.file?(f) && File.executable?(f) }
+    end
   end
 end

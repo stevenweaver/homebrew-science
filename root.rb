@@ -1,17 +1,22 @@
-require "formula"
-
 class Root < Formula
+  desc "Root object oriented framework for large scale data analysis"
   homepage "http://root.cern.ch"
-  version "5.34.22"
-  sha1 "f0afdd16847e555c38b28e115a88bb4903ce9a29"
+  version "5.34.32"
+  sha256 "939c7592802a54b6cbc593efb6e51699bf52e92baf6d6b20f486aaa08480fc5f"
   url "ftp://root.cern.ch/root/root_v#{version}.source.tar.gz"
-  mirror "http://ftp.riken.jp/pub/ROOT/root_v#{version}.source.tar.gz"
   head "https://github.com/root-mirror/root.git", :branch => "v5-34-00-patches"
+
+  bottle do
+    sha256 "820773380d9f4571d39b6a19424531a35a7adfeced20c8d9ffbd7b9f3c81d48e" => :yosemite
+    sha256 "54f5b3573aad05a95684a58b3639b8a17168affdfb3df424075f852a22449564" => :mavericks
+    sha256 "59f2826352d953477b376d1639313441c772598600f83dc361ab086fca98b62d" => :mountain_lion
+  end
 
   option "with-qt", "Build with Qt graphics backend and GSI's Qt integration"
 
   depends_on "openssl"
   depends_on "xrootd" => :recommended
+  depends_on "gsl" => :recommended
   depends_on "fftw" => :optional
   depends_on "qt" => [:optional, "with-qt3support"]
   depends_on :x11 => :optional
@@ -26,9 +31,6 @@ class Root < Formula
                   "man/man1/setup-pq2.1", "README/INSTALL", "README/README"],
       /bin.thisroot/, "libexec/thisroot"
 
-    # Determine architecture
-    arch = MacOS.prefer_64_bit? ? "macosx64" : "macosx"
-
     # N.B. that it is absolutely essential to specify
     # the --etcdir flag to the configure script.  This is
     # due to a long-known issue with ROOT where it will
@@ -36,7 +38,6 @@ class Root < Formula
     # is not specified:
     # http://root.cern.ch/phpBB3/viewtopic.php?f=3&t=15072
     args = %W[
-      #{arch}
       --all
       --enable-builtin-glew
       --enable-builtin-freetype
@@ -44,6 +45,8 @@ class Root < Formula
       --etcdir=#{prefix}/etc/root
       --mandir=#{man}
     ]
+
+    args << "--enable-mathmore" if build.with? "gsl"
 
     if build.with? "x11"
       args << "--disable-cocoa"
@@ -53,11 +56,8 @@ class Root < Formula
     if build.with? "qt"
       args << "--enable-qt"
       args << "--enable-qtgsi"
-      # ROOT configure script does not search for Qt framework
-      inreplace "config/Makefile.config" do |s|
-        s.gsub! /^QTLIBDIR .*/, "QTLIBDIR := -F #{Formula["qt"].opt_lib}"
-        s.gsub! /^QTLIB .*/, "QTLIB := -framework QtCore -framework QtGui -framework Qt3Support"
-      end
+      args << "--with-qt-libdir=#{Formula["qt"].opt_lib}"
+      args << "--with-qt-incdir=#{Formula["qt"].opt_include}"
     end
 
     system "./configure", *args
@@ -84,10 +84,12 @@ class Root < Formula
     script (.bashrc/.profile/etc.), or call them directly
     before using ROOT.
 
+    For bash users:
+      . $(brew --prefix root)/libexec/thisroot.sh
+    For zsh users:
+      pushd $(brew --prefix root) >/dev/null; . libexec/thisroot.sh; popd >/dev/null
     For csh/tcsh users:
       source `brew --prefix root`/libexec/thisroot.csh
-    For bash/zsh users:
-      . $(brew --prefix root)/libexec/thisroot.sh
     EOS
   end
 end

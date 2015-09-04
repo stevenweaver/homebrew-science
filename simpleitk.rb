@@ -1,5 +1,3 @@
-require "formula"
-
 class Simpleitk < Formula
   homepage "http://www.simpleitk.org"
   url "https://downloads.sourceforge.net/project/simpleitk/SimpleITK/0.8.0/Source/SimpleITK-0.8.0.tar.gz"
@@ -7,7 +5,7 @@ class Simpleitk < Formula
   head "https://github.com/SimpleITK/SimpleITK.git"
 
   depends_on "cmake" => :build
-  depends_on "insighttoolkit" => [:build, "with-review"]
+  depends_on "insighttoolkit"
   depends_on "swig" => :build
   depends_on :python
   depends_on :java => :optional
@@ -21,9 +19,6 @@ class Simpleitk < Formula
   option "with-tcl", "Compile for Tcl"
 
   def install
-    # Define the .git folder as simpleitk relies on it at build.
-    ENV["GIT_DIR"] = cached_download/".git" if build.head?
-
     args = std_cmake_args + %W[
       -DBUILD_TESTING=OFF
     ]

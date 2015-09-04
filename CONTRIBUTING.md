@@ -1,113 +1,24 @@
-First of all, thank you for contributing to [Homebrew/science](https://github.com/Homebrew/homebrew-science). The following guidelines are designed to help you write more efficient pull requests and/or issues.
+# Contributing
 
-* [Issues](#issues)
-* [Formula Guidelines](#formula)
-* [Submitting a Pull Request](#pull)
-* [Useful Snippets and Notes](#notes)
+Thank you for your interest in contributing to [Homebrew Science]. The following guidelines are designed to help you write more efficient pull requests.
 
-<a name="issues"/>
-## Issues
-
-#### First, please read the [Troubleshooting Checklist](https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/Troubleshooting.md#troubleshooting).
-
-See also Homebrew's [FAQ](https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/FAQ.md#faq) and [README](https://github.com/Homebrew/homebrew/tree/master/share/doc/homebrew#readme).
-
-#### New Issues
-
-* Search [open](https://github.com/Homebrew/homebrew-science/issues?state=open) and [closed](https://github.com/Homebrew/homebrew-science/issues?page=1&state=closed) issues before submitting a new issue. Duplicates will be closed.
-* Strictly one formula per issue unless your issue is about different formulae interacting negatively.
-* Give the full `brew` command that you used and that caused the error to emerge.
-* **If a formula fails to brew, always [gist](https://gist.github.com) the full logs with `brew gist-logs <formula>`.**
-
-<a name="formula"/>
 ## Formula Guidelines
 
-Please first read Homebrew's [Formula Cookbook](https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/Formula-Cookbook.md) and [Acceptable Formulae](https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/Acceptable-Formulae.md). This section lists additional guidelines that should be followed in Homebrew/science.
+**IMPORTANT** First read Homebrew's [Formula Cookbook] and [Acceptable Formulae]. If your formula installs or depends on Python modules read [Python for Formula Authors] as well.
+
+Homebrew follows the [GitHub Ruby Styleguide]. Check `brew style` or `brew audit --strict` before submitting a new formula.
+
+#### Patches
+
+Homebrew provides DSL for applying diff patches appended to the end of formula file, or as remote files (e.g. a [Gist]). In most cases, patches should be submitted upstream and linked to in your comments.
 
 #### Tests
 
-We insist that formulae in Homebrew/science always be accompanied by tests. Not all formulae currently in Homebrew/science have meaningful tests but the idea is to improve them over time.
+All formulæ should be accompanied by tests. We greatly appreciate any submissions that improve individual tests and test coverage in Homebrew Science.
 
-Tests can be in the form of a `make test` or `make check`, a `test` method, or (if possible) both. If your package doesn't provide tests, that should be specified in the pull request. Meaningful tests are preferred over simple commands like `system "foo", "-v"`.
+The `test do` block allows for a post-build test of software functionality sandboxed within a temporary `testpath`. For example, a test program may be written and compiled, and its output checked against an expected value. Meaningful tests are preferred over simple commands like `system "foo", "-v"`.
 
-Whenever install-time tests in the form of `make test` or `make check` take more than a few seconds, an option offering to disable tests should be included. Running the tests by default is preferable. Use the option `without-check` to disable your build-time tests. See [Testing / Checking](#testing--checking).
-
-#### Logical Guidelines
-
-* **Patches should be submitted upstream. Describe and link to the issue in your comments.**
-* Group mandatory, optional, and recommended dependencies together.
-* Group other options together.
-
-#### Stylistic Guidelines
-
-* Follow the [GitHub Ruby Styleguide](https://github.com/styleguide/ruby).
-* Use inline `if` and `unless` whevener possible and reasonable (e.g., `depends_on "foo" if build.with? "bar"`, `system "make", "check" if build.with? "check"`).
-
-<a name="pull"/>
-## Submitting a Pull Request
-
-#### Checklist
-
-* One formula per pull request.
-* When modifying an existing formula, avoid cluttering the patch with unnecessary changes.
-* Please check [open pull requests](https://github.com/Homebrew/homebrew-science/pulls) before submitting a new pull request. Duplicate pull requests will be closed.
-* Fix anything reported by `brew audit foo` when you submit `foo.rb`.
-* Head-only formulae belong in Homebrew/headonly or their own tap.
-
-#### New Pull Requests
-
-* Please give your pull request an informative title. Each pull request title and commit message should start with the name of the formula, followed by a colon and short comment. For example:
-    - `foo 1.2.3 (new formula)`
-    - `bar 0.1.2`
-    - `baz: add test`
-    - `qux: make X11 optional`
-
-* Please keep the commit message to a minimum. GitHub lets you describe your pull request at length when you submit it.
-* Be sure to include a `make test` / `make check` if available. If the test or check takes more that a few seconds, a `--without-check` option should be available to disable it. The test or check must be enabled by default.
-
-#### Pull Request vs. Tap
-
-In some cases, it may make more sense for you to host a Homebrew tap than to include your formula(e) in Homebrew/science. Here are a few guidelines to keep in mind when making your decision.
-
-Homebrew/science may give your formula wider visibility but a tap may be preferable when:
-
-* Your formula is part of a group of specialized and/or related formulae.
-* The source code or releases are very frequent so that the formula(e) must be updated frequently.
-* Your formula should be brewable urgently.
-
-It can be a good idea to start with your own tap and submit to Homebrew/science later.
-
-#### Will My Pull Request Be Merged?
-
-Probably, but please pay attention to the points above. The more careful you are with your code, the smoother the process will be.
-
-If it takes a while for us to get back to you, relax. We work on Homebrew/science on our own time. We're glad you're contributing and we'll do our best to keep you waiting as little as possible. It's fine to ping us to remind us of your request after a few days.
-
-If you'd like your formula(e) to be brewable urgently, the best option may be for you to host your own tap, even if it's temporary.
-
-<a name="notes"/>
-## Useful Snippets and Notes
-
-#### Optional Dependencies
-
-Homebrew provides the symbols `:optional` and `:recommended` to allow for inclusion / exclusion of optional dependencies. If the dependency `foo` is marked as `:optional`, it is excluded by default and may be included using `--with-foo` on the command line. If `foo` is marked as `:recommended`, it is included by default and may be excluded by using `--without-foo` on the command line.
-
-Thus, the following
-
-    option "with-foo"
-    depends_on "foo" if build.with? "foo"
-
-is redundant and should be replaced with the simpler and more readable
-
-    depends_on "foo" => :optional
-
-#### Locating Dependencies
-
-There is no good reason to refer to `HOMEBREW_PREFIX` in a formula. Please keep in mind that dependencies may be unlinked at build time. Brew will complain if a dependency is unlinked but that is a historical remnant that is probably bound to disappear. If you need to refer to the location of libraries or header files, please use `Formula["foo"].opt_lib`,  `Formula["foo"].opt_include`, `Formula["foo"].opt_prefix`, etc.
-
-#### Testing / Checking
-
-This should become a classic:
+`make check` or equivalent should be enabled if the package provides it:
 
     option "without-check", "Disable build-time checking (not recommended)"
     ...
@@ -115,53 +26,77 @@ This should become a classic:
     system "make", "check" if build.with? "check"
     system "make", "install"
 
-#### Building in a 64 Bit Environment
+If this target takes an inordinate amount of resources or is otherwise problematic the option can be switched to `"with-check"`, disabling `make check` in the default build.
 
-    ENV.m64 if MacOS.prefer_64_bit?
+#### Revisions
 
-#### Ternary Operator
+Adding or incrementing a [formula revision] forces a formula upgrade, for instance when breakage from an upgraded dependency necessitates rebuilding the downstream package. When upgrading a formula to a new version, however, any existing revision needs to be reset (i.e. removed).
 
-The one-liners
+#### Bottles
 
-    arch = MacOS.prefer_64_bit? ? "macosx64" : "macosx"
+[Bottles] are Homebrew's pre-compiled binary packages. Please avoid making any changes to the bottle block. Bottle checksums, URLs, and revisions are handled automatically by [Brew Test Bot].
 
-and
+## Submitting a Pull Request
 
-    arch = if MacOS.prefer_64_bit? then "macosx64" else "macosx" end
+First read core Homebrew's [How To Open a Homebrew Pull Request (and get it merged)]. The Homebrew Science tap repository is located in `$(brew --repository)/Library/Taps/homebrew/homebrew-science`.
 
-should be preferred to the multi-line `if` block, and, with a little habit, are more readable.
+Check [open pull requests] before submitting a duplicate. We prefer one formula per PR.
+
+Preface your commit message with the formula name, followed by a brief summary:
+* `foo: add test`
+* `bar: make X11 optional`
+Version upgrades should just be titled with their version:
+* `baz 2.4.1`
+* `qux 0.1.2 (new formula)`
+
+Use the rest of the commit message to describe your changes and link to any relevant issues. When your submission is ready to merge, squash all your commits to a single commit and push to your remote branch, with `--force` if necessary.
+
+## Pull Request vs. Tap
+
+Anyone can host their own tap (see [Interesting Taps & Branches]). Homebrew Science may give your formula wider visibility, but a tap is preferable when:
+* Your formula must be brewable urgently.
+* It is part of a group of specialized and/or related formulæ.
+* It is HEAD-only or lacks a stable tagged release.
+
+Feel free to start your own tap and submit to Homebrew Science later.
+
+## Useful Snippets and Notes
+
+#### Linking Dependencies
+
+Avoid refering to `HOMEBREW_PREFIX` in a formula. If you need to refer to dependency libraries or header files, use stable `opt` paths: `Formula["foo"].opt_prefix`, `Formula["foo"].opt_lib`,  `Formula["foo"].opt_include`, etc.
 
 #### OpenMP
 
-The current version of Clang, which is the default C compiler used in Homebrew, doesn't support OpenMP, but GCC does. Here's an example of alerting the user that OpenMP will not be enabled if using Clang:
+The current version of clang, Homebrew's default C/C++ compiler, does not support OpenMP, but GCC does. Here's an example of alerting the user that OpenMP will not be enabled if using clang:
 
-    opoo "Clang does not support OpenMP. Compile with gcc if this is not acceptable." if ENV.compiler == :clang
+    opoo "clang does not support OpenMP. Compile with gcc if this is not acceptable." if ENV.compiler == :clang
 
 This snippet will not abort compilation but output a warning message.
 
+If OpenMP support is obligatory, `needs :cxx11` may be used to avoid building with clang/LLVM altogether.
+
 #### MPI
 
-Please do not duplicate options for enabling MPI in a formula. For instance
-
-    option "with-mpi"
-    depends_on :mpi => [:f90, :c, :cxx] if build.with? "mpi"
-
-is redundant and should be replaced with
-
-    depends_on :mpi => [:f90, :c, :cxx, :optional]
-
-Depending on `:mpi` is more flexible than depending directly on `mpich2` or `open-mpi`. Remember that users could have installed either and that the two `conflict_with` each other.
+Depending on `:mpi` is more flexible than depending directly on `mpich2` or `open-mpi`. Remember that users could have installed either and the two `conflict_with` each other.
 
 #### Checking What Options Were Used to Build a Dependency
 
     nprocs = Tab.for_formula("foo").without?("mpi") ? 1 : 2
 
-#### Optionally Depending Upon X11
-
-    depends_on :x11 => :optional  # or :recommended
-
-See [Homebrew/homebrew#28096](https://github.com/Homebrew/homebrew/pull/28096).
-
-## Suggestions?
+## Suggestions
 
 Improvements to this guide are appreciated via issues or pull requests. If you're willing to add a new section to this documentation or the wiki, we would very much welcome your contribution.
+
+[Homebrew Science]: https://github.com/Homebrew/homebrew-science
+[open pull requests]: https://github.com/Homebrew/homebrew-science/pulls
+[How To Open a Homebrew Pull Request (and get it merged)]: https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/How-To-Open-a-Homebrew-Pull-Request-(and-get-it-merged).md
+[Interesting Taps & Branches]: https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/Interesting-Taps-%26-Branches.md#interesting-taps--branches
+[Formula revision]: https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/Formula-Cookbook.md#formulae-revisions
+[Bottles]: https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/Bottles.md
+[Brew Test Bot]: https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/Brew-Test-Bot.md#brew-test-bot
+[GitHub Ruby Styleguide]: https://github.com/styleguide/ruby
+[Formula Cookbook]: https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/Formula-Cookbook.md
+[Acceptable Formulae]: https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/Acceptable-Formulae.md
+[Python for Formula Authors]: https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/Python-for-Formula-Authors.md
+[Gist]: https://gist.github.com/
